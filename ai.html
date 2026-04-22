@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alnitak AI</title>
+    <link rel="icon" type="image/png" href="https://iili.io/B4CiGtf.jpg">
+    <link rel="stylesheet" href="css/ai.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+   <div id="login-screen" class="glass-container flex-center">
+        <div class="glass-card text-center auth-card">
+            <h2 class="title-3d" id="auth-title">Log <span class="highlight">In</span></h2>
+            
+            <div class="auth-inputs">
+                <input type="text" id="auth-username" placeholder="Username" style="display: none;">
+                
+                <input type="email" id="auth-email" placeholder="Email Address">
+                <input type="password" id="auth-password" placeholder="Password">
+            </div>
+
+            <button id="auth-action-btn" class="glow-btn full-width">Login</button>
+            
+            <p class="toggle-text">
+                Don't have an account? <span id="toggle-auth" class="highlight-text">Create new</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="chat-screen" style="display: none;">
+        <nav class="glass-nav chat-nav">
+            <div class="nav-left">
+                <span class="warning-badge">⚠️ Temporary Message</span>
+            </div>
+            <div class="nav-right">
+                <button id="backup-btn" class="action-btn">Backup</button>
+                <input type="file" id="import-file" style="display: none;" accept=".json">
+                <button id="import-btn" class="action-btn">Import</button>
+                <button id="logout-btn" class="action-btn outline">Logout</button>
+            </div>
+        </nav>
+
+        <div class="chat-container glass-card">
+            <div id="chat-box" class="chat-box">
+                <div id="greeting-message" class="greeting-message">
+                    <h2 class="greet-name">Hi iam Alnitak</h2>
+                    <h1 class="greet-text">this is temporary chat page please backup your messages if you need that</h1>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <textarea id="user-input" placeholder="Ask Alnitak AI... "></textarea>
+                <button id="send-btn" class="glow-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/backend.js"></script>
+</body>
+</html>
