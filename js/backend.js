@@ -11,11 +11,9 @@ const firebaseConfig = {
   measurementId: "G-PBLZ9H0T57"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-// UI Elements for Auth
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
 const logoutBtn = document.getElementById('logout-btn');
@@ -27,10 +25,8 @@ const authPassword = document.getElementById('auth-password');
 const authActionBtn = document.getElementById('auth-action-btn');
 const toggleAuthBtn = document.getElementById('toggle-auth');
 
-// State to track if user is on Login or Sign Up screen
 let isLoginMode = true;
 
-// Toggle between Login and Sign Up UI
 toggleAuthBtn.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     if (isLoginMode) {
@@ -48,53 +44,31 @@ toggleAuthBtn.addEventListener('click', () => {
     }
 });
 
-// Handle Login / Sign Up Action
 authActionBtn.addEventListener('click', () => {
     const email = authEmail.value.trim();
     const password = authPassword.value.trim();
 
-    if (!email || !password) {
-        alert("Email and Password fill pannunga bro!");
-        return;
-    }
+    if (!email || !password) return alert("Email and Password fill pannunga bro!");
 
     if (isLoginMode) {
-        // Login Logic
-        auth.signInWithEmailAndPassword(email, password)
-            .catch(error => alert("Login Error: " + error.message));
+        auth.signInWithEmailAndPassword(email, password).catch(error => alert("Login Error: " + error.message));
     } else {
-        // Sign Up Logic
         const username = authUsername.value.trim();
-        if (!username) {
-            alert("Username fill pannunga bro!");
-            return;
-        }
+        if (!username) return alert("Username fill pannunga bro!");
 
         auth.createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Update profile with the username
-                return userCredential.user.updateProfile({
-                    displayName: username
-                });
-            })
+            .then((userCredential) => userCredential.user.updateProfile({ displayName: username }))
             .catch(error => alert("Sign Up Error: " + error.message));
     }
 });
 
-// Logout Logic
-logoutBtn.addEventListener('click', () => {
-    auth.signOut();
-});
+logoutBtn.addEventListener('click', () => auth.signOut());
 
-// Auth State Observer (Switches screens automatically)
 auth.onAuthStateChanged(user => {
     if (user) {
         loginScreen.style.display = 'none';
         chatScreen.style.display = 'block';
-        // Clear input fields for security
-        authEmail.value = '';
-        authPassword.value = '';
-        authUsername.value = '';
+        authEmail.value = ''; authPassword.value = ''; authUsername.value = '';
     } else {
         loginScreen.style.display = 'flex';
         chatScreen.style.display = 'none';
@@ -102,55 +76,124 @@ auth.onAuthStateChanged(user => {
 });
 
 // ==========================================
-// 2. AI CHAT LOGIC (OPENROUTER API)
+// 2. SIDEBAR & MULTI-CHAT LOGIC
+// ==========================================
+const sidebar = document.getElementById('sidebar');
+const menuBtn = document.getElementById('menu-btn');
+const closeSidebar = document.getElementById('close-sidebar');
+const historyList = document.getElementById('history-list');
+
+// Open and Close Sidebar
+menuBtn.addEventListener('click', () => sidebar.classList.add('active'));
+closeSidebar.addEventListener('click', () => sidebar.classList.remove('active'));
+
+let allSessions = JSON.parse(localStorage.getItem('alnitak_sessions')) || [];
+let currentSessionId = null;
+let chatHistory = [];
+
+function saveCurrentSession() {
+    if (chatHistory.length === 0) return;
+    
+    // Auto-generate title based on first message
+    const title = chatHistory[0].text.substring(0, 25) + "..."; 
+
+    const existingSession = allSessions.find(s => s.id === currentSessionId);
+    if (existingSession) {
+        existingSession.messages = chatHistory;
+        existingSession.title = title;
+    } else {
+        const newSession = { id: Date.now(), title: title, messages: chatHistory };
+        allSessions.unshift(newSession); 
+        currentSessionId = newSession.id;
+    }
+    localStorage.setItem('alnitak_sessions', JSON.stringify(allSessions));
+    renderSidebar();
+}
+
+function renderSidebar() {
+    historyList.innerHTML = '';
+    allSessions.forEach(session => {
+        const div = document.createElement('div');
+        div.classList.add('history-item');
+        if (session.id === currentSessionId) div.classList.add('active-chat');
+        div.textContent = session.title;
+        
+        div.addEventListener('click', () => {
+            currentSessionId = session.id;
+            chatHistory = [...session.messages];
+            chatBox.innerHTML = ''; 
+            if (document.getElementById('greeting-message')) document.getElementById('greeting-message').style.display = 'none';
+            chatHistory.forEach(msg => renderMessageOnly(msg.sender, msg.text));
+            sidebar.classList.remove('active'); 
+            renderSidebar();
+        });
+        historyList.appendChild(div);
+    });
+}
+
+document.getElementById('new-chat-btn').addEventListener('click', () => {
+    chatHistory = [];
+    currentSessionId = null;
+    chatBox.innerHTML = `
+        <div id="greeting-message" class="greeting-message">
+            <h2 class="greet-name">Hi I am Alnitak</h2>
+            <h1 class="greet-text">How can I help you today?</h1>
+        </div>`;
+    sidebar.classList.remove('active');
+    renderSidebar();
+});
+
+// Load latest chat on startup
+window.addEventListener('DOMContentLoaded', () => {
+    if (allSessions.length > 0) {
+        currentSessionId = allSessions[0].id;
+        chatHistory = [...allSessions[0].messages];
+        if (document.getElementById('greeting-message')) document.getElementById('greeting-message').style.display = 'none';
+        chatHistory.forEach(msg => renderMessageOnly(msg.sender, msg.text));
+    }
+    renderSidebar();
+});
+
+
+// ==========================================
+// 3. AI CHAT LOGIC (OPENROUTER)
 // ==========================================
 const OPENROUTER_API_KEY = "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";
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-// Array to store messages for Backup
-let chatHistory = [];
-
-function appendMessage(sender, text) {
+function renderMessageOnly(sender, text) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender === 'User' ? 'user-msg' : 'ai-msg');
-    
-    // white-space: pre-wrap CSS property ensures line breaks (\n) are shown properly
     const contentSpan = document.createElement('span');
     contentSpan.classList.add('message-content');
     contentSpan.textContent = text; 
-    
     msgDiv.appendChild(contentSpan);
     chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Save to history array for backup
-    chatHistory.push({ sender, text });
 }
 
-// Typing Indicator UI kaata oru function
+function appendMessage(sender, text) {
+    renderMessageOnly(sender, text);
+    chatHistory.push({ sender, text });
+    saveCurrentSession();
+}
+
 function showTypingIndicator() {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', 'ai-msg', 'typing-indicator');
-    
-    // 3 Dots create pandrom
     for (let i = 0; i < 3; i++) {
         const dot = document.createElement('span');
         msgDiv.appendChild(dot);
     }
-    
     chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
-    
-    return msgDiv; // Idha return pandrom so that response vandhathum delete pannidalam
+    chatBox.scrollTop = chatBox.scrollHeight; 
+    return msgDiv; 
 }
 
-// Updated Fetch Function with STREAMING
 async function fetchAIResponse(userText) {
-    // 1. AI Type panra mari kaata typing indicator-a call pandrom
     const typingDiv = showTypingIndicator();
-
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -163,23 +206,14 @@ async function fetchAIResponse(userText) {
             body: JSON.stringify({
                 "model": "openai/gpt-oss-120b:free",
                 "messages": [
-                    {
-                        "role": "system", 
-                        "content": "You are a highly intelligent and helpful AI assistant named Alnitak AI. You were created and developed by Sk edz. Answer user queries politely and accurately."
-                    },
-                    {
-                        "role": "user", 
-                        "content": userText
-                    }
+                    { "role": "system", "content": "You are Alnitak AI, developed by Sk edz. Answer briefly and naturally." },
+                    { "role": "user", "content": userText }
                 ],
-                "stream": true // Streaming enable panidrom
+                "stream": true 
             })
         });
 
-        // 2. Response start aanathum Typing indicator-a remove pannidrom
         chatBox.removeChild(typingDiv);
-
-        // Pudhusa oru empty message box create pandrom (Type aaguradha kaata)
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', 'ai-msg');
         const contentSpan = document.createElement('span');
@@ -187,7 +221,6 @@ async function fetchAIResponse(userText) {
         msgDiv.appendChild(contentSpan);
         chatBox.appendChild(msgDiv);
 
-        // Streaming Data-va read panna logic
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullAIResponse = "";
@@ -198,58 +231,41 @@ async function fetchAIResponse(userText) {
 
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split('\n');
-            
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const dataStr = line.slice(6);
-                    if (dataStr === '[DONE]') break; // Process mudinjiduchu
-
+                    if (dataStr === '[DONE]') break; 
                     try {
                         const data = JSON.parse(dataStr);
                         const content = data.choices[0].delta.content || "";
                         fullAIResponse += content;
-                        
-                        // Text update panni auto-scroll pandrom
                         contentSpan.textContent = fullAIResponse;
                         chatBox.scrollTop = chatBox.scrollHeight;
-                    } catch (e) {
-                        // Incomplete chunks vandha ignore pannidum
-                    }
+                    } catch (e) {}
                 }
             }
         }
 
-        // Full message vandhathum backup-ku save pandrom
         chatHistory.push({ sender: 'AI', text: fullAIResponse });
+        saveCurrentSession();
 
     } catch (error) {
         if (typingDiv.parentNode) chatBox.removeChild(typingDiv);
         appendMessage('AI', "Connection error! API key check pannunga bro.");
-        console.error(error);
     }
 }
 
-// ==========================================
-// 3. UI EVENT LISTENERS & BACKUP LOGIC
-// ==========================================
-
-// Send Message Event
+// Send Actions
 sendBtn.addEventListener('click', () => {
     const text = userInput.value.trim();
     if (text) {
-        // Greeting-a hide panna
-        const greetingMsg = document.getElementById('greeting-message');
-        if (greetingMsg) greetingMsg.style.display = 'none';
-
+        if (document.getElementById('greeting-message')) document.getElementById('greeting-message').style.display = 'none';
         appendMessage('User', text);
         userInput.value = '';
-        userInput.style.height = '50px'; // Reset height
-        userInput.style.overflowY = 'hidden';
         fetchAIResponse(text);
     }
 });
 
-// Handle Enter key for sending, Shift+Enter for new line
 userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -257,40 +273,44 @@ userInput.addEventListener('keydown', (e) => {
     }
 });
 
-const backupBtn = document.getElementById('backup-btn');
+// ==========================================
+// 4. BACKUP & IMPORT
+// ==========================================
+document.getElementById('backup-btn').addEventListener('click', () => {
+    if(allSessions.length === 0) return alert("No messages to backup!");
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allSessions));
+    const downloadNode = document.createElement('a');
+    downloadNode.setAttribute("href", dataStr);
+    downloadNode.setAttribute("download", "alnitak_backup.json");
+    document.body.appendChild(downloadNode); 
+    downloadNode.click();
+    downloadNode.remove();
+});
+
 const importBtn = document.getElementById('import-btn');
 const importFile = document.getElementById('import-file');
 
-// Backup: Download chat history as a JSON file
-backupBtn.addEventListener('click', () => {
-    if(chatHistory.length === 0) return alert("No messages to backup!");
-    
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatHistory));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "chat_backup.json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-});
-
-// Import: Trigger file input click
 importBtn.addEventListener('click', () => importFile.click());
 
-// Load JSON file and display messages
 importFile.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const importedHistory = JSON.parse(e.target.result);
-                chatBox.innerHTML = ''; // Clear current chat
-                chatHistory = []; // Reset history
-                
-                importedHistory.forEach(msg => {
-                    appendMessage(msg.sender, msg.text);
-                });
+                const importedSessions = JSON.parse(e.target.result);
+                allSessions = importedSessions;
+                localStorage.setItem('alnitak_sessions', JSON.stringify(allSessions));
+                renderSidebar();
+                alert("Backup restored successfully!");
+                // Reload first chat if exists
+                if (allSessions.length > 0) {
+                    currentSessionId = allSessions[0].id;
+                    chatHistory = [...allSessions[0].messages];
+                    chatBox.innerHTML = '';
+                    if (document.getElementById('greeting-message')) document.getElementById('greeting-message').style.display = 'none';
+                    chatHistory.forEach(msg => renderMessageOnly(msg.sender, msg.text));
+                }
             } catch (error) {
                 alert("Invalid backup file!");
             }
