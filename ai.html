@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alnitak AI</title>
     <link rel="icon" type="image/png" href="https://iili.io/B4CiGtf.jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/ai.css">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -14,13 +15,23 @@
     <div class="bg-shape shape-1"></div>
     <div class="bg-shape shape-2"></div>
 
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Chat History</h3>
+            <button id="close-sidebar" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <button id="new-chat-btn" class="glow-btn full-width" style="margin-bottom: 15px;">+ New Chat</button>
+        
+        <div id="history-list" class="history-list">
+            </div>
+    </div>
+
    <div id="login-screen" class="glass-container flex-center">
         <div class="glass-card text-center auth-card">
             <h2 class="title-3d" id="auth-title">Log <span class="highlight">In</span></h2>
             
             <div class="auth-inputs">
                 <input type="text" id="auth-username" placeholder="Username" style="display: none;">
-                
                 <input type="email" id="auth-email" placeholder="Email Address">
                 <input type="password" id="auth-password" placeholder="Password">
             </div>
@@ -36,6 +47,7 @@
     <div id="chat-screen" style="display: none;">
         <nav class="glass-nav chat-nav">
             <div class="nav-left">
+                <button id="menu-btn" class="icon-btn" style="margin-right: 15px;"><i class="fa-solid fa-bars"></i></button>
                 <span class="warning-badge">⚠️ Temporary Message</span>
             </div>
             <div class="nav-right">
