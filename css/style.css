@@ -431,3 +431,88 @@ body {
     .greet-name { font-size: 1.5rem; }
     .greet-text { font-size: 2rem; }
 }
+/* =========================================
+   SIDEBAR & HISTORY STYLES
+   ========================================= */
+.sidebar {
+    position: fixed;
+    left: -320px; /* Hide by default */
+    top: 0;
+    width: 300px;
+    height: 100vh;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    transition: left 0.3s ease-in-out;
+    z-index: 2000;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+}
+
+.sidebar.active {
+    left: 0; /* Slide in pannum */
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    color: #4facfe;
+    font-weight: bold;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.icon-btn:hover { 
+    color: #cf30aa; 
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 5px;
+}
+
+/* Scrollbar for history list */
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+.history-item {
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Long text vandha ... nu varum */
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    color: #e3e3e3;
+}
+
+.history-item:hover {
+    background: rgba(79, 172, 254, 0.1);
+    border: 1px solid rgba(79, 172, 254, 0.3);
+}
+
+.history-item.active-chat {
+    background: rgba(207, 48, 170, 0.15);
+    border: 1px solid rgba(207, 48, 170, 0.5);
+    color: white;
+    font-weight: 500;
+}
